@@ -25,7 +25,7 @@ import {
   UserMinus
 } from 'lucide-react';
 import { Housemaid } from '../types/housemaid';
-import { calculateEmploymentStatus, formatDaysWorked, getEmploymentStatusColor, getEmploymentStatusText } from '../utils/employmentCalculations';
+import { calculateEmploymentStatus, formatDaysWorked, getEmploymentStatusColor, getEmploymentStatusText, getDisplayDaysWorked } from '../utils/employmentCalculations';
 import StatusBadge from './StatusBadge';
 
 interface DashboardProps {
@@ -85,7 +85,7 @@ const Dashboard: React.FC<DashboardProps> = ({ housemaids, onViewHousemaid }) =>
     // Calculate eligible for permanent (90+ days but still probationary)
     const eligibleForPermanent = housemaids.filter(h => {
       if (h.employment?.status !== 'probationary' || !h.employment?.startDate) return false;
-      const calculation = calculateEmploymentStatus(h.employment.startDate);
+      const calculation = calculateEmploymentStatus(h.employment.startDate, h.employment.status, h.employment.effectiveDate);
       return calculation.isEligibleForPermanent;
     });
 
@@ -432,8 +432,10 @@ const Dashboard: React.FC<DashboardProps> = ({ housemaids, onViewHousemaid }) =>
         <div className="space-y-4">
           {recentActivity.map((housemaid) => {
             const employmentCalc = housemaid.employment?.startDate 
-              ? calculateEmploymentStatus(housemaid.employment.startDate)
+              ? calculateEmploymentStatus(housemaid.employment.startDate, housemaid.employment.status, housemaid.employment.effectiveDate)
               : null;
+
+            const displayDays = employmentCalc ? getDisplayDaysWorked(employmentCalc) : 0;
 
             return (
               <div
@@ -476,7 +478,8 @@ const Dashboard: React.FC<DashboardProps> = ({ housemaids, onViewHousemaid }) =>
                         <>
                           <span>•</span>
                           <span className="text-blue-600 font-medium">
-                            {formatDaysWorked(employmentCalc.daysWorked)} worked
+                            {formatDaysWorked(displayDays)} worked
+                            {employmentCalc.isResignedOrTerminated && ' (total)'}
                           </span>
                         </>
                       )}
@@ -485,8 +488,8 @@ const Dashboard: React.FC<DashboardProps> = ({ housemaids, onViewHousemaid }) =>
                 </div>
                 <div className="flex items-center space-x-2">
                   {housemaid.employment?.status && employmentCalc && (
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getEmploymentStatusColor(housemaid.employment.status, employmentCalc.daysWorked)}`}>
-                      {getEmploymentStatusText(housemaid.employment.status, employmentCalc.daysWorked)}
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getEmploymentStatusColor(housemaid.employment.status, displayDays)}`}>
+                      {getEmploymentStatusText(housemaid.employment.status, displayDays)}
                     </span>
                   )}
                   <StatusBadge
@@ -613,8 +616,10 @@ const Dashboard: React.FC<DashboardProps> = ({ housemaids, onViewHousemaid }) =>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {filteredData.map((housemaid) => {
                     const employmentCalc = housemaid.employment?.startDate 
-                      ? calculateEmploymentStatus(housemaid.employment.startDate)
+                      ? calculateEmploymentStatus(housemaid.employment.startDate, housemaid.employment.status, housemaid.employment.effectiveDate)
                       : null;
+
+                    const displayDays = employmentCalc ? getDisplayDaysWorked(employmentCalc) : 0;
 
                     return (
                       <div
@@ -698,11 +703,12 @@ const Dashboard: React.FC<DashboardProps> = ({ housemaids, onViewHousemaid }) =>
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-gray-600">Employment:</span>
                               <div className="text-right">
-                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getEmploymentStatusColor(housemaid.employment.status, employmentCalc.daysWorked)}`}>
-                                  {getEmploymentStatusText(housemaid.employment.status, employmentCalc.daysWorked)}
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getEmploymentStatusColor(housemaid.employment.status, displayDays)}`}>
+                                  {getEmploymentStatusText(housemaid.employment.status, displayDays)}
                                 </span>
                                 <div className="text-xs text-gray-500 mt-1">
-                                  {formatDaysWorked(employmentCalc.daysWorked)} worked
+                                  {formatDaysWorked(displayDays)} worked
+                                  {employmentCalc.isResignedOrTerminated && ' (total)'}
                                 </div>
                               </div>
                             </div>
@@ -819,8 +825,10 @@ const Dashboard: React.FC<DashboardProps> = ({ housemaids, onViewHousemaid }) =>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {selectedAgency.housemaids.map((housemaid) => {
                   const employmentCalc = housemaid.employment?.startDate 
-                    ? calculateEmploymentStatus(housemaid.employment.startDate)
+                    ? calculateEmploymentStatus(housemaid.employment.startDate, housemaid.employment.status, housemaid.employment.effectiveDate)
                     : null;
+
+                  const displayDays = employmentCalc ? getDisplayDaysWorked(employmentCalc) : 0;
 
                   return (
                     <div
@@ -891,11 +899,12 @@ const Dashboard: React.FC<DashboardProps> = ({ housemaids, onViewHousemaid }) =>
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-600">Employment:</span>
                             <div className="text-right">
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getEmploymentStatusColor(housemaid.employment.status, employmentCalc.daysWorked)}`}>
-                                {getEmploymentStatusText(housemaid.employment.status, employmentCalc.daysWorked)}
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getEmploymentStatusColor(housemaid.employment.status, displayDays)}`}>
+                                {getEmploymentStatusText(housemaid.employment.status, displayDays)}
                               </span>
                               <div className="text-xs text-gray-500 mt-1">
-                                {formatDaysWorked(employmentCalc.daysWorked)} worked
+                                {formatDaysWorked(displayDays)} worked
+                                {employmentCalc.isResignedOrTerminated && ' (total)'}
                               </div>
                             </div>
                           </div>

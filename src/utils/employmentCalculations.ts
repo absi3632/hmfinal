@@ -3,23 +3,43 @@ export interface EmploymentCalculation {
   shouldBePermanent: boolean;
   daysUntilPermanent: number;
   isEligibleForPermanent: boolean;
+  actualDaysWorked?: number; // For resigned/terminated employees
+  isResignedOrTerminated: boolean;
 }
 
-export const calculateEmploymentStatus = (startDate: string): EmploymentCalculation => {
+export const calculateEmploymentStatus = (
+  startDate: string, 
+  status?: 'probationary' | 'permanent' | 'resigned' | 'terminated',
+  effectiveDate?: string
+): EmploymentCalculation => {
   if (!startDate) {
     return {
       daysWorked: 0,
       shouldBePermanent: false,
       daysUntilPermanent: 90,
-      isEligibleForPermanent: false
+      isEligibleForPermanent: false,
+      isResignedOrTerminated: false
     };
   }
 
   const start = new Date(startDate);
-  const today = new Date();
+  const isResignedOrTerminated = status === 'resigned' || status === 'terminated';
+  
+  let endDate: Date;
+  let actualDaysWorked: number | undefined;
+
+  if (isResignedOrTerminated && effectiveDate) {
+    // For resigned/terminated employees, calculate based on effective date
+    endDate = new Date(effectiveDate);
+    const diffTime = endDate.getTime() - start.getTime();
+    actualDaysWorked = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  } else {
+    // For active employees, calculate based on current date
+    endDate = new Date();
+  }
   
   // Calculate days worked
-  const diffTime = today.getTime() - start.getTime();
+  const diffTime = endDate.getTime() - start.getTime();
   const daysWorked = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   
   // Check if should be permanent (90 days or more)
@@ -31,7 +51,9 @@ export const calculateEmploymentStatus = (startDate: string): EmploymentCalculat
     daysWorked: Math.max(0, daysWorked), // Don't show negative days
     shouldBePermanent,
     daysUntilPermanent,
-    isEligibleForPermanent
+    isEligibleForPermanent,
+    actualDaysWorked: isResignedOrTerminated ? Math.max(0, actualDaysWorked || 0) : undefined,
+    isResignedOrTerminated
   };
 };
 
@@ -102,4 +124,11 @@ export const formatDaysWorked = (days: number): string => {
   }
   
   return `${days} days`;
+};
+
+// Helper function to get the correct days worked for display
+export const getDisplayDaysWorked = (calculation: EmploymentCalculation): number => {
+  return calculation.isResignedOrTerminated && calculation.actualDaysWorked !== undefined 
+    ? calculation.actualDaysWorked 
+    : calculation.daysWorked;
 };

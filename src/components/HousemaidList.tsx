@@ -29,7 +29,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { Housemaid } from '../types/housemaid';
-import { calculateEmploymentStatus, formatDaysWorked, getEmploymentStatusColor, getEmploymentStatusText } from '../utils/employmentCalculations';
+import { calculateEmploymentStatus, formatDaysWorked, getEmploymentStatusColor, getEmploymentStatusText, getDisplayDaysWorked } from '../utils/employmentCalculations';
 import { hasPermission, getCurrentUser } from '../utils/auth';
 import StatusBadge from './StatusBadge';
 import ExcelImport from './ExcelImport';
@@ -107,7 +107,7 @@ const HousemaidList: React.FC<HousemaidListProps> = ({
       if (employmentFilter !== 'all') {
         if (employmentFilter === 'eligible') {
           const calc = housemaid.employment?.startDate 
-            ? calculateEmploymentStatus(housemaid.employment.startDate)
+            ? calculateEmploymentStatus(housemaid.employment.startDate, housemaid.employment.status, housemaid.employment.effectiveDate)
             : null;
           matchesEmployment = !!(calc?.isEligibleForPermanent) && housemaid.employment?.status === 'probationary';
         } else {
@@ -211,9 +211,10 @@ const HousemaidList: React.FC<HousemaidListProps> = ({
 
   const HousemaidCard: React.FC<{ housemaid: Housemaid }> = ({ housemaid }) => {
     const employmentCalc = housemaid.employment?.startDate 
-      ? calculateEmploymentStatus(housemaid.employment.startDate)
+      ? calculateEmploymentStatus(housemaid.employment.startDate, housemaid.employment.status, housemaid.employment.effectiveDate)
       : null;
 
+    const displayDays = employmentCalc ? getDisplayDaysWorked(employmentCalc) : 0;
     const isSelected = selectedHousemaids.has(housemaid.id);
 
     return (
@@ -326,8 +327,8 @@ const HousemaidList: React.FC<HousemaidListProps> = ({
               text={housemaid.locationStatus.isInsideCountry ? 'Inside Country' : 'Outside Country'}
             />
             {housemaid.employment?.status && employmentCalc && (
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getEmploymentStatusColor(housemaid.employment.status, employmentCalc.daysWorked)}`}>
-                {getEmploymentStatusText(housemaid.employment.status, employmentCalc.daysWorked)}
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getEmploymentStatusColor(housemaid.employment.status, displayDays)}`}>
+                {getEmploymentStatusText(housemaid.employment.status, displayDays)}
               </span>
             )}
           </div>
@@ -358,7 +359,10 @@ const HousemaidList: React.FC<HousemaidListProps> = ({
                   <Clock className="h-4 w-4 mr-2" />
                   Days Worked
                 </span>
-                <span className="text-sm font-medium text-blue-600">{formatDaysWorked(employmentCalc.daysWorked)}</span>
+                <span className="text-sm font-medium text-blue-600">
+                  {formatDaysWorked(displayDays)}
+                  {employmentCalc.isResignedOrTerminated && ' (total)'}
+                </span>
               </div>
             )}
 
@@ -421,9 +425,10 @@ const HousemaidList: React.FC<HousemaidListProps> = ({
 
   const HousemaidRow: React.FC<{ housemaid: Housemaid }> = ({ housemaid }) => {
     const employmentCalc = housemaid.employment?.startDate 
-      ? calculateEmploymentStatus(housemaid.employment.startDate)
+      ? calculateEmploymentStatus(housemaid.employment.startDate, housemaid.employment.status, housemaid.employment.effectiveDate)
       : null;
 
+    const displayDays = employmentCalc ? getDisplayDaysWorked(employmentCalc) : 0;
     const isSelected = selectedHousemaids.has(housemaid.id);
 
     return (
@@ -487,11 +492,12 @@ const HousemaidList: React.FC<HousemaidListProps> = ({
         <td className="px-6 py-4">
           {housemaid.employment?.status && employmentCalc && (
             <div>
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getEmploymentStatusColor(housemaid.employment.status, employmentCalc.daysWorked)}`}>
-                {getEmploymentStatusText(housemaid.employment.status, employmentCalc.daysWorked)}
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getEmploymentStatusColor(housemaid.employment.status, displayDays)}`}>
+                {getEmploymentStatusText(housemaid.employment.status, displayDays)}
               </span>
               <div className="text-xs text-gray-500 mt-1">
-                {formatDaysWorked(employmentCalc.daysWorked)}
+                {formatDaysWorked(displayDays)}
+                {employmentCalc.isResignedOrTerminated && ' (total)'}
               </div>
               {/* Show effective date for resigned/terminated */}
               {housemaid.employment.effectiveDate && (housemaid.employment.status === 'resigned' || housemaid.employment.status === 'terminated') && (
