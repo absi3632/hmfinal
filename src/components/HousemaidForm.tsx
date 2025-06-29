@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Save, 
+  X, 
   User, 
+  Mail, 
+  Phone, 
   MapPin, 
   Building, 
   Calendar, 
@@ -14,9 +17,10 @@ import {
   Users
 } from 'lucide-react';
 import { Housemaid } from '../types/housemaid';
-import { passportCountries } from '../data/countries';
+import { countries, passportCountries } from '../data/countries';
 import { generateHousemaidNumberIfEligible, shouldGenerateHousemaidNumber } from '../utils/localStorage';
 import { hasPermission, getCurrentUser } from '../utils/auth';
+import CountrySelect from './CountrySelect';
 import ProfilePhotoUpload from './ProfilePhotoUpload';
 import ProfilePhotoViewer from './ProfilePhotoViewer';
 import CVUpload from './CVUpload';
