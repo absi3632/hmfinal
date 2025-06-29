@@ -114,7 +114,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     pdf.text(brandSettings.copyrightText || '© 2024 Housemaid Management. All rights reserved.', pageWidth / 2, pageHeight - 6, { align: 'center' });
   };
 
-  const addSectionHeader = (pdf: jsPDF, title: string, yPos: number, icon?: string): number => {
+  const addSectionHeader = (pdf: jsPDF, title: string, yPos: number): number => {
     const pageWidth = pdf.internal.pageSize.getWidth();
     
     // Section background
