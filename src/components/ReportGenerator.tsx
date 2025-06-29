@@ -49,12 +49,13 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
 
   const addPageHeader = (pdf: jsPDF, pageNumber: number, totalPages: number, housemaidName: string, housemaid?: Housemaid) => {
     const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 25.4; // 1 inch margin in mm
     
     // Add brand logo in upper left corner (if available)
     if (includeLogo && brandSettings.logoFileData) {
       try {
-        pdf.addImage(brandSettings.logoFileData, 'JPEG', margin, 15, 30, 25);
+        pdf.addImage(brandSettings.logoFileData, 'JPEG', margin, 15, 25, 20);
       } catch (error) {
         console.warn('Could not add logo to PDF header');
       }
@@ -63,7 +64,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     // Add profile photo in upper right corner (if available)
     if (includePhotos && housemaid?.profilePhoto?.fileData) {
       try {
-        pdf.addImage(housemaid.profilePhoto.fileData, 'JPEG', pageWidth - margin - 30, 15, 30, 30);
+        pdf.addImage(housemaid.profilePhoto.fileData, 'JPEG', pageWidth - margin - 25, 15, 25, 25);
       } catch (error) {
         console.warn('Could not add profile photo to PDF header');
       }
@@ -71,40 +72,32 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     
     // Header separator line
     pdf.setDrawColor(37, 99, 235); // Blue-600
-    pdf.setLineWidth(1.5);
-    pdf.line(margin, 50, pageWidth - margin, 50);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, 45, pageWidth - margin, 45);
     
     // Company name and title in center
     pdf.setTextColor(37, 99, 235);
-    pdf.setFontSize(18);
+    pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(brandSettings.companyName || 'Housemaid Management System', pageWidth / 2, 25, { align: 'center' });
+    pdf.text(brandSettings.companyName || 'Housemaid Management System', pageWidth / 2, 22, { align: 'center' });
     
-    pdf.setFontSize(14);
+    pdf.setFontSize(12);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('COMPREHENSIVE EMPLOYEE REPORT', pageWidth / 2, 35, { align: 'center' });
+    pdf.text('COMPREHENSIVE EMPLOYEE REPORT', pageWidth / 2, 30, { align: 'center' });
     
     // Employee name
-    pdf.setFontSize(12);
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    pdf.text(`Employee: ${housemaidName}`, pageWidth / 2, 42, { align: 'center' });
+    pdf.text(`Employee: ${housemaidName}`, pageWidth / 2, 37, { align: 'center' });
     
-    // Page number
-    pdf.setFontSize(10);
+    // Page number and date in top right
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(107, 114, 128);
-    pdf.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - margin, 25, { align: 'right' });
-    
-    // Report generation date
-    pdf.text(`Generated: ${new Date().toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })}`, pageWidth - margin, 35, { align: 'right' });
+    pdf.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - margin, 20, { align: 'right' });
+    pdf.text(`Generated: ${new Date().toLocaleDateString('en-US')}`, pageWidth - margin, 27, { align: 'right' });
   };
 
   const addPageFooter = (pdf: jsPDF, pageNumber: number) => {
@@ -114,25 +107,25 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     
     // Footer separator line
     pdf.setDrawColor(229, 231, 235);
-    pdf.setLineWidth(0.5);
-    pdf.line(margin, pageHeight - 30, pageWidth - margin, pageHeight - 30);
+    pdf.setLineWidth(0.3);
+    pdf.line(margin, pageHeight - 25, pageWidth - margin, pageHeight - 25);
     
     // Footer content
     pdf.setTextColor(107, 114, 128);
-    pdf.setFontSize(8);
+    pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     
     // Left: Company name
-    pdf.text(brandSettings.companyName || 'Housemaid Management', margin, pageHeight - 20);
+    pdf.text(brandSettings.companyName || 'Housemaid Management', margin, pageHeight - 18);
     
     // Center: Confidential notice
-    pdf.text('CONFIDENTIAL DOCUMENT - FOR AUTHORIZED PERSONNEL ONLY', pageWidth / 2, pageHeight - 20, { align: 'center' });
+    pdf.text('CONFIDENTIAL DOCUMENT - FOR AUTHORIZED PERSONNEL ONLY', pageWidth / 2, pageHeight - 18, { align: 'center' });
     
     // Right: Page number
-    pdf.text(`Page ${pageNumber}`, pageWidth - margin, pageHeight - 20, { align: 'right' });
+    pdf.text(`Page ${pageNumber}`, pageWidth - margin, pageHeight - 18, { align: 'right' });
     
     // Copyright at bottom center
-    pdf.setFontSize(7);
+    pdf.setFontSize(6);
     pdf.setTextColor(156, 163, 175);
     pdf.text(brandSettings.copyrightText || '© 2024 Housemaid Management. All rights reserved.', pageWidth / 2, pageHeight - 12, { align: 'center' });
   };
@@ -143,19 +136,19 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     
     // Section background
     pdf.setFillColor(248, 250, 252); // Gray-50
-    pdf.rect(margin, yPos - 2, pageWidth - (margin * 2), 12, 'F');
+    pdf.rect(margin, yPos - 1, pageWidth - (margin * 2), 8, 'F');
     
     // Section left border accent
     pdf.setFillColor(37, 99, 235); // Blue-600
-    pdf.rect(margin, yPos - 2, 3, 12, 'F');
+    pdf.rect(margin, yPos - 1, 2, 8, 'F');
     
     // Section title
     pdf.setTextColor(30, 64, 175); // Blue-800
-    pdf.setFontSize(12);
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(title, margin + 8, yPos + 6);
+    pdf.text(title, margin + 5, yPos + 4);
     
-    return yPos + 18;
+    return yPos + 12;
   };
 
   const addInfoTable = (pdf: jsPDF, data: Array<[string, string]>, yPos: number): number => {
@@ -167,43 +160,43 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
       // Alternate row background
       if (index % 2 === 0) {
         pdf.setFillColor(249, 250, 251); // Gray-50
-        pdf.rect(margin, currentY - 1, pageWidth - (margin * 2), 8, 'F');
+        pdf.rect(margin, currentY - 0.5, pageWidth - (margin * 2), 6, 'F');
       }
       
       // Label column
       pdf.setTextColor(75, 85, 99); // Gray-600
-      pdf.setFontSize(9);
+      pdf.setFontSize(8);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(label, margin + 5, currentY + 4);
+      pdf.text(label, margin + 3, currentY + 3);
       
       // Value column
       pdf.setTextColor(17, 24, 39); // Gray-900
       pdf.setFont('helvetica', 'normal');
       
       // Handle long text wrapping
-      const maxWidth = pageWidth - margin - 90;
-      if (value.length > 50) {
+      const maxWidth = pageWidth - margin - 70;
+      if (value.length > 40) {
         const lines = pdf.splitTextToSize(value, maxWidth);
-        pdf.text(lines, margin + 80, currentY + 4);
-        currentY += (lines.length * 4) + 4;
+        pdf.text(lines, margin + 60, currentY + 3);
+        currentY += (lines.length * 3) + 3;
       } else {
-        pdf.text(value, margin + 80, currentY + 4);
-        currentY += 8;
+        pdf.text(value, margin + 60, currentY + 3);
+        currentY += 6;
       }
     });
     
-    return currentY + 8;
+    return currentY + 5;
   };
 
   const checkPageBreak = (pdf: jsPDF, currentY: number, requiredSpace: number, housemaidName: string, pageNumber: number, totalPages: number, housemaid?: Housemaid): { newY: number; newPageNumber: number } => {
     const pageHeight = pdf.internal.pageSize.getHeight();
     
-    if (currentY + requiredSpace > pageHeight - 50) {
+    if (currentY + requiredSpace > pageHeight - 40) {
       addPageFooter(pdf, pageNumber);
       pdf.addPage();
       pageNumber++;
       addPageHeader(pdf, pageNumber, totalPages, housemaidName, housemaid);
-      return { newY: 65, newPageNumber: pageNumber }; // Start position after header
+      return { newY: 55, newPageNumber: pageNumber }; // Start position after header
     }
     
     return { newY: currentY, newPageNumber: pageNumber };
@@ -213,22 +206,22 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const margin = 25.4; // 1 inch margin in mm
-    let yPosition = 65; // Start after header
+    let yPosition = 55; // Start after header
     let pageNumber = 1;
-    const totalPages = 4; // Estimate total pages
+    const totalPages = 2; // Maximum 2 pages
 
     // Add first page header
     addPageHeader(pdf, pageNumber, totalPages, housemaid.personalInfo.name, housemaid);
 
     // Document title
     pdf.setTextColor(17, 24, 39);
-    pdf.setFontSize(20);
+    pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.text('EMPLOYEE COMPREHENSIVE REPORT', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 20;
+    yPosition += 15;
 
     // PERSONAL INFORMATION Section
-    yPosition = addSectionHeader(pdf, '📋 PERSONAL INFORMATION', yPosition);
+    yPosition = addSectionHeader(pdf, 'PERSONAL INFORMATION', yPosition);
     
     const personalInfo: Array<[string, string]> = [
       ['Full Name:', housemaid.personalInfo.name],
@@ -236,196 +229,198 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
       ['Email Address:', housemaid.personalInfo.email || 'Not provided'],
       ['Phone Number:', housemaid.personalInfo.phone],
       ['Nationality:', housemaid.personalInfo.citizenship || 'Not specified'],
-      ['Country of Origin:', housemaid.personalInfo.country || 'Not specified'],
+      ['Country:', housemaid.personalInfo.country || 'Not specified'],
       ['City:', housemaid.personalInfo.city || 'Not specified'],
-      ['Residential Address:', housemaid.personalInfo.address]
+      ['Address:', housemaid.personalInfo.address]
     ];
 
     yPosition = addInfoTable(pdf, personalInfo, yPosition);
 
     // IDENTIFICATION Section
-    const pageBreak1 = checkPageBreak(pdf, yPosition, 60, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
+    const pageBreak1 = checkPageBreak(pdf, yPosition, 30, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = pageBreak1.newY;
     pageNumber = pageBreak1.newPageNumber;
     
-    yPosition = addSectionHeader(pdf, '🆔 IDENTIFICATION', yPosition);
+    yPosition = addSectionHeader(pdf, 'IDENTIFICATION', yPosition);
     
     const identificationInfo: Array<[string, string]> = [
       ['Passport Number:', housemaid.identity.passportNumber],
-      ['Passport Issuing Country:', housemaid.identity.passportCountry || 'Not specified'],
-      ['Resident ID Number:', housemaid.identity.residentId || 'Not provided']
+      ['Passport Country:', housemaid.identity.passportCountry || 'Not specified'],
+      ['Resident ID:', housemaid.identity.residentId || 'Not provided']
     ];
 
     yPosition = addInfoTable(pdf, identificationInfo, yPosition);
 
     // LOCATION STATUS Section
-    const pageBreak2 = checkPageBreak(pdf, yPosition, 60, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
+    const pageBreak2 = checkPageBreak(pdf, yPosition, 25, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = pageBreak2.newY;
     pageNumber = pageBreak2.newPageNumber;
     
-    yPosition = addSectionHeader(pdf, '📍 LOCATION STATUS', yPosition);
+    yPosition = addSectionHeader(pdf, 'LOCATION STATUS', yPosition);
     
     const locationInfo: Array<[string, string]> = [
-      ['Current Location Status:', housemaid.locationStatus.isInsideCountry ? '✅ Inside Country' : '❌ Outside Country'],
+      ['Current Status:', housemaid.locationStatus.isInsideCountry ? 'Inside Country' : 'Outside Country'],
       ['Exit Date:', formatDate(housemaid.locationStatus.exitDate)],
-      ['Date Outside Country:', formatDate(housemaid.locationStatus.outsideCountryDate)]
+      ['Outside Country Date:', formatDate(housemaid.locationStatus.outsideCountryDate)]
     ];
 
     yPosition = addInfoTable(pdf, locationInfo, yPosition);
 
     // EMPLOYER DETAILS Section
-    const pageBreak3 = checkPageBreak(pdf, yPosition, 60, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
+    const pageBreak3 = checkPageBreak(pdf, yPosition, 20, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = pageBreak3.newY;
     pageNumber = pageBreak3.newPageNumber;
     
-    yPosition = addSectionHeader(pdf, '🏢 EMPLOYER DETAILS', yPosition);
+    yPosition = addSectionHeader(pdf, 'EMPLOYER DETAILS', yPosition);
     
     const employerInfo: Array<[string, string]> = [
-      ['Company/Employer Name:', housemaid.employer.name],
+      ['Company Name:', housemaid.employer.name],
       ['Contact Number:', housemaid.employer.mobileNumber]
     ];
 
     yPosition = addInfoTable(pdf, employerInfo, yPosition);
 
     // EMPLOYMENT INFORMATION Section
-    const pageBreak4 = checkPageBreak(pdf, yPosition, 80, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
+    const pageBreak4 = checkPageBreak(pdf, yPosition, 35, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = pageBreak4.newY;
     pageNumber = pageBreak4.newPageNumber;
     
-    yPosition = addSectionHeader(pdf, '💼 EMPLOYMENT INFORMATION', yPosition);
+    yPosition = addSectionHeader(pdf, 'EMPLOYMENT INFORMATION', yPosition);
     
     const employmentInfo: Array<[string, string]> = [
-      ['Job Position:', housemaid.employment.position || 'Housemaid'],
-      ['Employment Status:', housemaid.employment.status.charAt(0).toUpperCase() + housemaid.employment.status.slice(1)],
+      ['Position:', housemaid.employment.position || 'Housemaid'],
+      ['Status:', housemaid.employment.status.charAt(0).toUpperCase() + housemaid.employment.status.slice(1)],
       ['Contract Duration:', `${housemaid.employment.contractPeriodYears} year(s)`],
-      ['Employment Start Date:', formatDate(housemaid.employment.startDate)],
-      ['Contract End Date:', formatDate(housemaid.employment.endDate)],
-      ['Monthly Salary:', housemaid.employment.salary || 'Not specified'],
-      ['Status Effective Date:', formatDate(housemaid.employment.effectiveDate)]
+      ['Start Date:', formatDate(housemaid.employment.startDate)],
+      ['End Date:', formatDate(housemaid.employment.endDate)],
+      ['Salary:', housemaid.employment.salary || 'Not specified'],
+      ['Effective Date:', formatDate(housemaid.employment.effectiveDate)]
     ];
 
     yPosition = addInfoTable(pdf, employmentInfo, yPosition);
 
     // FLIGHT INFORMATION Section
-    const pageBreak5 = checkPageBreak(pdf, yPosition, 80, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
+    const pageBreak5 = checkPageBreak(pdf, yPosition, 30, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = pageBreak5.newY;
     pageNumber = pageBreak5.newPageNumber;
     
-    yPosition = addSectionHeader(pdf, '✈️ FLIGHT INFORMATION', yPosition);
+    yPosition = addSectionHeader(pdf, 'FLIGHT INFORMATION', yPosition);
     
     const flightInfo: Array<[string, string]> = [
       ['Flight Date:', formatDate(housemaid.flightInfo?.flightDate)],
       ['Flight Number:', housemaid.flightInfo?.flightNumber || 'Not specified'],
-      ['Airline Name:', housemaid.flightInfo?.airlineName || 'Not specified'],
+      ['Airline:', housemaid.flightInfo?.airlineName || 'Not specified'],
       ['Destination:', housemaid.flightInfo?.destination || 'Not specified'],
-      ['Air Ticket Number:', housemaid.airTicket?.ticketNumber || 'Not provided'],
+      ['Ticket Number:', housemaid.airTicket?.ticketNumber || 'Not provided'],
       ['Booking Reference:', housemaid.airTicket?.bookingReference || 'Not provided']
     ];
 
     yPosition = addInfoTable(pdf, flightInfo, yPosition);
 
     // PHILIPPINE RECRUITMENT AGENCY Section
-    const pageBreak6 = checkPageBreak(pdf, yPosition, 80, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
+    const pageBreak6 = checkPageBreak(pdf, yPosition, 35, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = pageBreak6.newY;
     pageNumber = pageBreak6.newPageNumber;
     
-    yPosition = addSectionHeader(pdf, '🇵🇭 PHILIPPINE RECRUITMENT AGENCY', yPosition);
+    yPosition = addSectionHeader(pdf, 'PHILIPPINE RECRUITMENT AGENCY', yPosition);
     
     const phAgencyInfo: Array<[string, string]> = [
       ['Agency Name:', housemaid.recruitmentAgency.name],
       ['License Number:', housemaid.recruitmentAgency.licenseNumber || 'Not provided'],
       ['Contact Person:', housemaid.recruitmentAgency.contactPerson || 'Not provided'],
       ['Phone Number:', housemaid.recruitmentAgency.phoneNumber || 'Not provided'],
-      ['Email Address:', housemaid.recruitmentAgency.email || 'Not provided'],
-      ['Office Address:', housemaid.recruitmentAgency.address || 'Not provided']
+      ['Email:', housemaid.recruitmentAgency.email || 'Not provided'],
+      ['Address:', housemaid.recruitmentAgency.address || 'Not provided']
     ];
 
     yPosition = addInfoTable(pdf, phAgencyInfo, yPosition);
 
     // SAUDI RECRUITMENT AGENCY Section
-    const pageBreak7 = checkPageBreak(pdf, yPosition, 80, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
+    const pageBreak7 = checkPageBreak(pdf, yPosition, 35, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = pageBreak7.newY;
     pageNumber = pageBreak7.newPageNumber;
     
-    yPosition = addSectionHeader(pdf, '🇸🇦 SAUDI RECRUITMENT AGENCY', yPosition);
+    yPosition = addSectionHeader(pdf, 'SAUDI RECRUITMENT AGENCY', yPosition);
     
     const saAgencyInfo: Array<[string, string]> = [
       ['Agency Name:', housemaid.saudiRecruitmentAgency?.name || 'Not assigned'],
       ['License Number:', housemaid.saudiRecruitmentAgency?.licenseNumber || 'Not provided'],
       ['Contact Person:', housemaid.saudiRecruitmentAgency?.contactPerson || 'Not provided'],
       ['Phone Number:', housemaid.saudiRecruitmentAgency?.phoneNumber || 'Not provided'],
-      ['Email Address:', housemaid.saudiRecruitmentAgency?.email || 'Not provided'],
-      ['Office Address:', housemaid.saudiRecruitmentAgency?.address || 'Not provided']
+      ['Email:', housemaid.saudiRecruitmentAgency?.email || 'Not provided'],
+      ['Address:', housemaid.saudiRecruitmentAgency?.address || 'Not provided']
     ];
 
     yPosition = addInfoTable(pdf, saAgencyInfo, yPosition);
 
     // COMPLAINT INFORMATION Section
-    const pageBreak8 = checkPageBreak(pdf, yPosition, 80, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
+    const pageBreak8 = checkPageBreak(pdf, yPosition, 30, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = pageBreak8.newY;
     pageNumber = pageBreak8.newPageNumber;
     
-    yPosition = addSectionHeader(pdf, '⚠️ COMPLAINT INFORMATION', yPosition);
+    yPosition = addSectionHeader(pdf, 'COMPLAINT INFORMATION', yPosition);
     
     const complaintInfo: Array<[string, string]> = [
-      ['Complaint Status:', housemaid.complaint.status.charAt(0).toUpperCase() + housemaid.complaint.status.slice(1)],
+      ['Status:', housemaid.complaint.status.charAt(0).toUpperCase() + housemaid.complaint.status.slice(1)],
       ['Date Reported:', formatDate(housemaid.complaint.dateReported)],
       ['Date Resolved:', formatDate(housemaid.complaint.dateResolved)],
-      ['Complaint Description:', housemaid.complaint.description || 'No complaints reported'],
-      ['Resolution Details:', housemaid.complaint.resolutionDescription || 'Not applicable']
+      ['Description:', housemaid.complaint.description || 'No complaints reported'],
+      ['Resolution:', housemaid.complaint.resolutionDescription || 'Not applicable']
     ];
 
     yPosition = addInfoTable(pdf, complaintInfo, yPosition);
 
-    // Document verification section
-    const pageBreak9 = checkPageBreak(pdf, yPosition, 80, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
+    // Document verification section (if space allows)
+    const pageBreak9 = checkPageBreak(pdf, yPosition, 40, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = pageBreak9.newY;
     pageNumber = pageBreak9.newPageNumber;
     
-    yPosition += 15;
-    
-    // Verification section
-    pdf.setDrawColor(229, 231, 235);
-    pdf.setLineWidth(0.5);
-    pdf.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 10;
-    
-    pdf.setTextColor(17, 24, 39);
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('📋 DOCUMENT VERIFICATION & AUTHORIZATION', margin, yPosition);
-    yPosition += 12;
-    
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-    pdf.setTextColor(75, 85, 99);
-    pdf.text('This document has been electronically generated and contains accurate information as of the generation date.', margin, yPosition);
-    yPosition += 6;
-    pdf.text('For verification purposes, please contact the issuing authority using the contact information provided above.', margin, yPosition);
-    yPosition += 6;
-    pdf.text('This document is confidential and intended solely for authorized personnel.', margin, yPosition);
-    
-    // Signature lines
-    yPosition += 25;
-    pdf.setDrawColor(107, 114, 128);
-    pdf.setLineWidth(0.5);
-    
-    // Left signature line
-    pdf.line(margin, yPosition, margin + 70, yPosition);
-    // Right signature line
-    pdf.line(pageWidth - margin - 70, yPosition, pageWidth - margin, yPosition);
-    
-    yPosition += 8;
-    pdf.setFontSize(8);
-    pdf.setTextColor(107, 114, 128);
-    pdf.text('Authorized Signature', margin, yPosition);
-    pdf.text('Date: _______________', pageWidth - margin - 70, yPosition);
+    if (yPosition < 220) { // Only add if there's enough space
+      yPosition += 8;
+      
+      // Verification section
+      pdf.setDrawColor(229, 231, 235);
+      pdf.setLineWidth(0.3);
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+      yPosition += 6;
+      
+      pdf.setTextColor(17, 24, 39);
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DOCUMENT VERIFICATION', margin, yPosition);
+      yPosition += 8;
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('This document has been electronically generated and contains accurate information as of the generation date.', margin, yPosition);
+      yPosition += 4;
+      pdf.text('For verification purposes, please contact the issuing authority using the contact information provided above.', margin, yPosition);
+      yPosition += 4;
+      pdf.text('This document is confidential and intended solely for authorized personnel.', margin, yPosition);
+      
+      // Signature lines
+      yPosition += 15;
+      pdf.setDrawColor(107, 114, 128);
+      pdf.setLineWidth(0.3);
+      
+      // Left signature line
+      pdf.line(margin, yPosition, margin + 50, yPosition);
+      // Right signature line
+      pdf.line(pageWidth - margin - 50, yPosition, pageWidth - margin, yPosition);
+      
+      yPosition += 5;
+      pdf.setFontSize(6);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('Authorized Signature', margin, yPosition);
+      pdf.text('Date: _______________', pageWidth - margin - 50, yPosition);
+    }
 
     // Add footer to last page
     addPageFooter(pdf, pageNumber);
 
     // Save the PDF
-    const fileName = `${housemaid.personalInfo.name.replace(/\s+/g, '_')}_Comprehensive_Report.pdf`;
+    const fileName = `${housemaid.personalInfo.name.replace(/\s+/g, '_')}_Professional_Report.pdf`;
     pdf.save(fileName);
   };
 
@@ -748,7 +743,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
                     <User className="h-5 w-5 text-blue-600" />
                     <div>
                       <p className="font-medium">Individual Report</p>
-                      <p className="text-sm text-gray-600">Comprehensive A4 report for a single housemaid</p>
+                      <p className="text-sm text-gray-600">Professional A4 report for a single housemaid (Maximum 2 pages)</p>
                     </div>
                   </div>
                 </label>
@@ -894,14 +889,15 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
                 </div>
               </div>
               <div className="text-xs text-blue-600 space-y-1">
-                <p>✨ <strong>Professional Features:</strong></p>
+                <p><strong>Professional Features:</strong></p>
                 <p>• A4 paper size (210 x 297 mm) with 1-inch margins</p>
                 <p>• Header with logo (left) and photo (right) on each page</p>
                 <p>• Footer with page numbers and confidentiality notice</p>
+                <p>• Clean section headers without icons or special characters</p>
                 <p>• Alternating row colors for better readability</p>
-                <p>• Section headers with accent colors and icons</p>
-                <p>• Signature lines and document verification section</p>
                 <p>• Proper text spacing to prevent overlap</p>
+                <p>• Maximum 2 pages for optimal presentation</p>
+                <p>• Date generated and page numbers included</p>
               </div>
             </div>
 
