@@ -40,303 +40,375 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Not specified';
-    return new Date(dateString).toLocaleDateString();
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const addPageHeader = (pdf: jsPDF, pageNumber: number, totalPages: number, housemaidName: string) => {
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    
+    // Header background
+    pdf.setFillColor(37, 99, 235); // Blue-600
+    pdf.rect(0, 0, pageWidth, 25, 'F');
+    
+    // Company logo (if available)
+    if (includeLogo && brandSettings.logoFileData) {
+      try {
+        pdf.addImage(brandSettings.logoFileData, 'JPEG', 10, 5, 15, 15);
+      } catch (error) {
+        console.warn('Could not add logo to PDF header');
+      }
+    }
+    
+    // Header text
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(brandSettings.companyName || 'Housemaid Management System', includeLogo ? 30 : 15, 12);
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('COMPREHENSIVE EMPLOYEE REPORT', includeLogo ? 30 : 15, 18);
+    
+    // Page number
+    pdf.setFontSize(10);
+    pdf.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - 15, 18, { align: 'right' });
+    
+    // Employee name in header
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(housemaidName, pageWidth - 15, 12, { align: 'right' });
+  };
+
+  const addPageFooter = (pdf: jsPDF) => {
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    
+    // Footer line
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.5);
+    pdf.line(15, pageHeight - 20, pageWidth - 15, pageHeight - 20);
+    
+    // Footer text
+    pdf.setTextColor(100, 100, 100);
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    
+    const currentDate = new Date().toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    pdf.text(`Generated: ${currentDate}`, 15, pageHeight - 12);
+    pdf.text('CONFIDENTIAL DOCUMENT - FOR AUTHORIZED PERSONNEL ONLY', pageWidth / 2, pageHeight - 12, { align: 'center' });
+    pdf.text(`${brandSettings.companyName || 'Housemaid Management'}`, pageWidth - 15, pageHeight - 12, { align: 'right' });
+    
+    // Copyright
+    pdf.setFontSize(7);
+    pdf.text(brandSettings.copyrightText || '© 2024 Housemaid Management. All rights reserved.', pageWidth / 2, pageHeight - 6, { align: 'center' });
+  };
+
+  const addSectionHeader = (pdf: jsPDF, title: string, yPos: number, icon?: string): number => {
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    
+    // Section background
+    pdf.setFillColor(248, 250, 252); // Gray-50
+    pdf.rect(15, yPos - 2, pageWidth - 30, 12, 'F');
+    
+    // Section border
+    pdf.setDrawColor(59, 130, 246); // Blue-500
+    pdf.setLineWidth(2);
+    pdf.line(15, yPos - 2, 15, yPos + 10);
+    
+    // Section title
+    pdf.setTextColor(30, 64, 175); // Blue-800
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(title, 20, yPos + 6);
+    
+    return yPos + 15;
+  };
+
+  const addInfoRow = (pdf: jsPDF, label: string, value: string, yPos: number, isEven: boolean = false): number => {
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    
+    // Alternate row background
+    if (isEven) {
+      pdf.setFillColor(249, 250, 251); // Gray-50
+      pdf.rect(15, yPos - 2, pageWidth - 30, 8, 'F');
+    }
+    
+    // Label
+    pdf.setTextColor(75, 85, 99); // Gray-600
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(label, 20, yPos + 3);
+    
+    // Value
+    pdf.setTextColor(17, 24, 39); // Gray-900
+    pdf.setFont('helvetica', 'normal');
+    
+    // Handle long text wrapping
+    const maxWidth = pageWidth - 120;
+    if (value.length > 50) {
+      const lines = pdf.splitTextToSize(value, maxWidth);
+      pdf.text(lines, 90, yPos + 3);
+      return yPos + (lines.length * 6) + 2;
+    } else {
+      pdf.text(value, 90, yPos + 3);
+      return yPos + 8;
+    }
   };
 
   const generatePDFReport = async (housemaid: Housemaid) => {
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    let yPosition = 20;
+    let yPosition = 35; // Start after header
+    let pageNumber = 1;
+    const totalPages = 2; // Estimate total pages
 
-    // Add confidentiality statement
-    pdf.setFontSize(8);
-    pdf.setTextColor(128, 128, 128);
-    pdf.text('CONFIDENTIAL DOCUMENT - FOR AUTHORIZED PERSONNEL ONLY', pageWidth / 2, 10, { align: 'center' });
+    // Add first page header
+    addPageHeader(pdf, pageNumber, totalPages, housemaid.personalInfo.name);
 
-    // Header Section with Logo and Photo
-    if (includeLogo && brandSettings.logoFileData) {
-      try {
-        pdf.addImage(brandSettings.logoFileData, 'JPEG', 15, 15, 30, 20);
-      } catch (error) {
-        console.warn('Could not add logo to PDF');
-      }
-    }
+    // Report title and date
+    pdf.setTextColor(17, 24, 39);
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('EMPLOYEE COMPREHENSIVE REPORT', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 10;
 
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text(`Report Generated: ${formatDate(new Date().toISOString())}`, pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 15;
+
+    // Profile photo (if available and included)
     if (includePhotos && housemaid.profilePhoto?.fileData) {
       try {
-        pdf.addImage(housemaid.profilePhoto.fileData, 'JPEG', pageWidth - 45, 15, 30, 20);
+        pdf.addImage(housemaid.profilePhoto.fileData, 'JPEG', pageWidth - 45, yPosition, 30, 30);
       } catch (error) {
         console.warn('Could not add profile photo to PDF');
       }
     }
 
-    yPosition = 45;
-
-    // Title
-    pdf.setFontSize(18);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('HOUSEMAID COMPREHENSIVE REPORT', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15;
-
-    // Report generation date
-    pdf.setFontSize(10);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15;
-
-    // Personal Information Section
-    pdf.setFontSize(14);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('PERSONAL INFORMATION', 15, yPosition);
-    yPosition += 8;
-
+    // PERSONAL INFORMATION Section
+    yPosition = addSectionHeader(pdf, 'PERSONAL INFORMATION', yPosition);
+    
     const personalInfo = [
       ['Full Name:', housemaid.personalInfo.name],
       ['Housemaid Number:', housemaid.housemaidNumber || 'Not assigned'],
-      ['Email:', housemaid.personalInfo.email || 'Not provided'],
-      ['Phone:', housemaid.personalInfo.phone],
+      ['Email Address:', housemaid.personalInfo.email || 'Not provided'],
+      ['Phone Number:', housemaid.personalInfo.phone],
       ['Nationality:', housemaid.personalInfo.citizenship || 'Not specified'],
-      ['Country:', housemaid.personalInfo.country || 'Not specified'],
+      ['Country of Origin:', housemaid.personalInfo.country || 'Not specified'],
       ['City:', housemaid.personalInfo.city || 'Not specified'],
-      ['Address:', housemaid.personalInfo.address]
+      ['Residential Address:', housemaid.personalInfo.address]
     ];
 
-    pdf.setFontSize(10);
-    personalInfo.forEach(([label, value]) => {
-      pdf.setTextColor(80, 80, 80);
-      pdf.text(label, 20, yPosition);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(value, 70, yPosition);
-      yPosition += 6;
+    personalInfo.forEach(([label, value], index) => {
+      yPosition = addInfoRow(pdf, label, value, yPosition, index % 2 === 0);
     });
 
     yPosition += 5;
 
-    // Identification Section
-    pdf.setFontSize(14);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('IDENTIFICATION', 15, yPosition);
-    yPosition += 8;
-
+    // IDENTIFICATION Section
+    yPosition = addSectionHeader(pdf, 'IDENTIFICATION', yPosition);
+    
     const identificationInfo = [
       ['Passport Number:', housemaid.identity.passportNumber],
-      ['Passport Country:', housemaid.identity.passportCountry || 'Not specified'],
-      ['Resident ID:', housemaid.identity.residentId || 'Not provided']
+      ['Passport Issuing Country:', housemaid.identity.passportCountry || 'Not specified'],
+      ['Resident ID Number:', housemaid.identity.residentId || 'Not provided']
     ];
 
-    pdf.setFontSize(10);
-    identificationInfo.forEach(([label, value]) => {
-      pdf.setTextColor(80, 80, 80);
-      pdf.text(label, 20, yPosition);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(value, 70, yPosition);
-      yPosition += 6;
+    identificationInfo.forEach(([label, value], index) => {
+      yPosition = addInfoRow(pdf, label, value, yPosition, index % 2 === 0);
     });
 
     yPosition += 5;
 
-    // Location Status
-    pdf.setFontSize(14);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('LOCATION STATUS', 15, yPosition);
-    yPosition += 8;
-
+    // LOCATION STATUS Section
+    yPosition = addSectionHeader(pdf, 'LOCATION STATUS', yPosition);
+    
     const locationInfo = [
-      ['Current Status:', housemaid.locationStatus.isInsideCountry ? 'Inside Country' : 'Outside Country'],
+      ['Current Location Status:', housemaid.locationStatus.isInsideCountry ? 'Inside Country' : 'Outside Country'],
       ['Exit Date:', formatDate(housemaid.locationStatus.exitDate)],
-      ['Outside Country Date:', formatDate(housemaid.locationStatus.outsideCountryDate)]
+      ['Date Outside Country:', formatDate(housemaid.locationStatus.outsideCountryDate)]
     ];
 
-    pdf.setFontSize(10);
-    locationInfo.forEach(([label, value]) => {
-      pdf.setTextColor(80, 80, 80);
-      pdf.text(label, 20, yPosition);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(value, 70, yPosition);
-      yPosition += 6;
+    locationInfo.forEach(([label, value], index) => {
+      yPosition = addInfoRow(pdf, label, value, yPosition, index % 2 === 0);
     });
 
     yPosition += 5;
 
     // Check if we need a new page
-    if (yPosition > pageHeight - 50) {
+    if (yPosition > pageHeight - 60) {
+      addPageFooter(pdf);
       pdf.addPage();
-      yPosition = 20;
+      pageNumber++;
+      addPageHeader(pdf, pageNumber, totalPages, housemaid.personalInfo.name);
+      yPosition = 35;
     }
 
-    // Employer Details
-    pdf.setFontSize(14);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('EMPLOYER DETAILS', 15, yPosition);
-    yPosition += 8;
-
+    // EMPLOYER DETAILS Section
+    yPosition = addSectionHeader(pdf, 'EMPLOYER DETAILS', yPosition);
+    
     const employerInfo = [
-      ['Company Name:', housemaid.employer.name],
+      ['Company/Employer Name:', housemaid.employer.name],
       ['Contact Number:', housemaid.employer.mobileNumber]
     ];
 
-    pdf.setFontSize(10);
-    employerInfo.forEach(([label, value]) => {
-      pdf.setTextColor(80, 80, 80);
-      pdf.text(label, 20, yPosition);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(value, 70, yPosition);
-      yPosition += 6;
+    employerInfo.forEach(([label, value], index) => {
+      yPosition = addInfoRow(pdf, label, value, yPosition, index % 2 === 0);
     });
 
     yPosition += 5;
 
-    // Employment Information
-    pdf.setFontSize(14);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('EMPLOYMENT INFORMATION', 15, yPosition);
-    yPosition += 8;
-
+    // EMPLOYMENT INFORMATION Section
+    yPosition = addSectionHeader(pdf, 'EMPLOYMENT INFORMATION', yPosition);
+    
     const employmentInfo = [
-      ['Position:', housemaid.employment.position || 'Housemaid'],
-      ['Status:', housemaid.employment.status],
-      ['Contract Duration:', `${housemaid.employment.contractPeriodYears} years`],
-      ['Start Date:', formatDate(housemaid.employment.startDate)],
-      ['End Date:', formatDate(housemaid.employment.endDate)],
-      ['Salary:', housemaid.employment.salary || 'Not specified'],
-      ['Effective Date:', formatDate(housemaid.employment.effectiveDate)]
+      ['Job Position:', housemaid.employment.position || 'Housemaid'],
+      ['Employment Status:', housemaid.employment.status.charAt(0).toUpperCase() + housemaid.employment.status.slice(1)],
+      ['Contract Duration:', `${housemaid.employment.contractPeriodYears} year(s)`],
+      ['Employment Start Date:', formatDate(housemaid.employment.startDate)],
+      ['Contract End Date:', formatDate(housemaid.employment.endDate)],
+      ['Monthly Salary:', housemaid.employment.salary || 'Not specified'],
+      ['Status Effective Date:', formatDate(housemaid.employment.effectiveDate)]
     ];
 
-    pdf.setFontSize(10);
-    employmentInfo.forEach(([label, value]) => {
-      pdf.setTextColor(80, 80, 80);
-      pdf.text(label, 20, yPosition);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(value, 70, yPosition);
-      yPosition += 6;
+    employmentInfo.forEach(([label, value], index) => {
+      yPosition = addInfoRow(pdf, label, value, yPosition, index % 2 === 0);
     });
 
     yPosition += 5;
 
-    // Flight Information
-    pdf.setFontSize(14);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('FLIGHT INFORMATION', 15, yPosition);
-    yPosition += 8;
-
+    // FLIGHT INFORMATION Section
+    yPosition = addSectionHeader(pdf, 'FLIGHT INFORMATION', yPosition);
+    
     const flightInfo = [
       ['Flight Date:', formatDate(housemaid.flightInfo?.flightDate)],
       ['Flight Number:', housemaid.flightInfo?.flightNumber || 'Not specified'],
-      ['Airline:', housemaid.flightInfo?.airlineName || 'Not specified'],
+      ['Airline Name:', housemaid.flightInfo?.airlineName || 'Not specified'],
       ['Destination:', housemaid.flightInfo?.destination || 'Not specified'],
-      ['Ticket Number:', housemaid.airTicket?.ticketNumber || 'Not provided'],
+      ['Air Ticket Number:', housemaid.airTicket?.ticketNumber || 'Not provided'],
       ['Booking Reference:', housemaid.airTicket?.bookingReference || 'Not provided']
     ];
 
-    pdf.setFontSize(10);
-    flightInfo.forEach(([label, value]) => {
-      pdf.setTextColor(80, 80, 80);
-      pdf.text(label, 20, yPosition);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(value, 70, yPosition);
-      yPosition += 6;
+    flightInfo.forEach(([label, value], index) => {
+      yPosition = addInfoRow(pdf, label, value, yPosition, index % 2 === 0);
     });
 
     yPosition += 5;
 
     // Check if we need a new page
     if (yPosition > pageHeight - 80) {
+      addPageFooter(pdf);
       pdf.addPage();
-      yPosition = 20;
+      pageNumber++;
+      addPageHeader(pdf, pageNumber, totalPages, housemaid.personalInfo.name);
+      yPosition = 35;
     }
 
-    // Philippine Recruitment Agency
-    pdf.setFontSize(14);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('PHILIPPINE RECRUITMENT AGENCY', 15, yPosition);
-    yPosition += 8;
-
+    // PHILIPPINE RECRUITMENT AGENCY Section
+    yPosition = addSectionHeader(pdf, 'PHILIPPINE RECRUITMENT AGENCY', yPosition);
+    
     const phAgencyInfo = [
       ['Agency Name:', housemaid.recruitmentAgency.name],
       ['License Number:', housemaid.recruitmentAgency.licenseNumber || 'Not provided'],
       ['Contact Person:', housemaid.recruitmentAgency.contactPerson || 'Not provided'],
       ['Phone Number:', housemaid.recruitmentAgency.phoneNumber || 'Not provided'],
-      ['Email:', housemaid.recruitmentAgency.email || 'Not provided'],
-      ['Address:', housemaid.recruitmentAgency.address || 'Not provided']
+      ['Email Address:', housemaid.recruitmentAgency.email || 'Not provided'],
+      ['Office Address:', housemaid.recruitmentAgency.address || 'Not provided']
     ];
 
-    pdf.setFontSize(10);
-    phAgencyInfo.forEach(([label, value]) => {
-      pdf.setTextColor(80, 80, 80);
-      pdf.text(label, 20, yPosition);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(value, 70, yPosition);
-      yPosition += 6;
+    phAgencyInfo.forEach(([label, value], index) => {
+      yPosition = addInfoRow(pdf, label, value, yPosition, index % 2 === 0);
     });
 
     yPosition += 5;
 
-    // Saudi Recruitment Agency
-    pdf.setFontSize(14);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('SAUDI RECRUITMENT AGENCY', 15, yPosition);
-    yPosition += 8;
-
+    // SAUDI RECRUITMENT AGENCY Section
+    yPosition = addSectionHeader(pdf, 'SAUDI RECRUITMENT AGENCY', yPosition);
+    
     const saAgencyInfo = [
       ['Agency Name:', housemaid.saudiRecruitmentAgency?.name || 'Not assigned'],
       ['License Number:', housemaid.saudiRecruitmentAgency?.licenseNumber || 'Not provided'],
       ['Contact Person:', housemaid.saudiRecruitmentAgency?.contactPerson || 'Not provided'],
       ['Phone Number:', housemaid.saudiRecruitmentAgency?.phoneNumber || 'Not provided'],
-      ['Email:', housemaid.saudiRecruitmentAgency?.email || 'Not provided'],
-      ['Address:', housemaid.saudiRecruitmentAgency?.address || 'Not provided']
+      ['Email Address:', housemaid.saudiRecruitmentAgency?.email || 'Not provided'],
+      ['Office Address:', housemaid.saudiRecruitmentAgency?.address || 'Not provided']
     ];
 
-    pdf.setFontSize(10);
-    saAgencyInfo.forEach(([label, value]) => {
-      pdf.setTextColor(80, 80, 80);
-      pdf.text(label, 20, yPosition);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(value, 70, yPosition);
-      yPosition += 6;
+    saAgencyInfo.forEach(([label, value], index) => {
+      yPosition = addInfoRow(pdf, label, value, yPosition, index % 2 === 0);
     });
 
     yPosition += 5;
 
-    // Complaint Information
-    pdf.setFontSize(14);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('COMPLAINT INFORMATION', 15, yPosition);
-    yPosition += 8;
-
+    // COMPLAINT INFORMATION Section
+    yPosition = addSectionHeader(pdf, 'COMPLAINT INFORMATION', yPosition);
+    
     const complaintInfo = [
-      ['Status:', housemaid.complaint.status],
+      ['Complaint Status:', housemaid.complaint.status.charAt(0).toUpperCase() + housemaid.complaint.status.slice(1)],
       ['Date Reported:', formatDate(housemaid.complaint.dateReported)],
       ['Date Resolved:', formatDate(housemaid.complaint.dateResolved)],
-      ['Description:', housemaid.complaint.description || 'No complaints'],
-      ['Resolution:', housemaid.complaint.resolutionDescription || 'Not applicable']
+      ['Complaint Description:', housemaid.complaint.description || 'No complaints reported'],
+      ['Resolution Details:', housemaid.complaint.resolutionDescription || 'Not applicable']
     ];
 
-    pdf.setFontSize(10);
-    complaintInfo.forEach(([label, value]) => {
-      pdf.setTextColor(80, 80, 80);
-      pdf.text(label, 20, yPosition);
-      pdf.setTextColor(0, 0, 0);
-      
-      // Handle long text wrapping
-      if (value.length > 50) {
-        const lines = pdf.splitTextToSize(value, pageWidth - 90);
-        pdf.text(lines, 70, yPosition);
-        yPosition += (lines.length - 1) * 6;
-      } else {
-        pdf.text(value, 70, yPosition);
-      }
-      yPosition += 6;
+    complaintInfo.forEach(([label, value], index) => {
+      yPosition = addInfoRow(pdf, label, value, yPosition, index % 2 === 0);
     });
 
-    // Footer
-    pdf.setFontSize(8);
-    pdf.setTextColor(128, 128, 128);
-    pdf.text(`Page 1 of 1 | Generated: ${new Date().toLocaleString()}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
-    pdf.text('This document contains confidential information', pageWidth / 2, pageHeight - 5, { align: 'center' });
+    // Add footer to last page
+    addPageFooter(pdf);
+
+    // Document verification section
+    if (yPosition < pageHeight - 80) {
+      yPosition += 15;
+      
+      // Verification section
+      pdf.setDrawColor(200, 200, 200);
+      pdf.setLineWidth(0.5);
+      pdf.line(15, yPosition, pageWidth - 15, yPosition);
+      yPosition += 10;
+      
+      pdf.setTextColor(17, 24, 39);
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DOCUMENT VERIFICATION', 15, yPosition);
+      yPosition += 8;
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.text('This document has been electronically generated and contains accurate information as of the generation date.', 15, yPosition);
+      yPosition += 6;
+      pdf.text('For verification purposes, please contact the issuing authority using the contact information provided above.', 15, yPosition);
+      
+      // Signature lines
+      yPosition += 20;
+      pdf.setDrawColor(100, 100, 100);
+      pdf.line(15, yPosition, 80, yPosition);
+      pdf.line(pageWidth - 80, yPosition, pageWidth - 15, yPosition);
+      
+      yPosition += 5;
+      pdf.setFontSize(8);
+      pdf.text('Authorized Signature', 15, yPosition);
+      pdf.text('Date', pageWidth - 80, yPosition);
+    }
 
     // Save the PDF
-    pdf.save(`${housemaid.personalInfo.name.replace(/\s+/g, '_')}_Report.pdf`);
+    const fileName = `${housemaid.personalInfo.name.replace(/\s+/g, '_')}_Comprehensive_Report.pdf`;
+    pdf.save(fileName);
   };
 
   const generateExcelReport = () => {
