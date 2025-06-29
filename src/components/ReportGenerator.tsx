@@ -209,7 +209,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
   const generatePDFReport = async (housemaid: Housemaid) => {
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
     let yPosition = 55; // Start after header
     let pageNumber = 1;
     const totalPages = 3; // Estimate total pages
@@ -227,7 +226,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     // PERSONAL INFORMATION Section
     yPosition = addSectionHeader(pdf, '📋 PERSONAL INFORMATION', yPosition);
     
-    const personalInfo = [
+    const personalInfo: Array<[string, string]> = [
       ['Full Name:', housemaid.personalInfo.name],
       ['Employee ID:', housemaid.housemaidNumber || 'Not assigned'],
       ['Email Address:', housemaid.personalInfo.email || 'Not provided'],
@@ -244,7 +243,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     yPosition = checkPageBreak(pdf, yPosition, 50, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = addSectionHeader(pdf, '🆔 IDENTIFICATION', yPosition);
     
-    const identificationInfo = [
+    const identificationInfo: Array<[string, string]> = [
       ['Passport Number:', housemaid.identity.passportNumber],
       ['Passport Issuing Country:', housemaid.identity.passportCountry || 'Not specified'],
       ['Resident ID Number:', housemaid.identity.residentId || 'Not provided']
@@ -256,7 +255,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     yPosition = checkPageBreak(pdf, yPosition, 50, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = addSectionHeader(pdf, '📍 LOCATION STATUS', yPosition);
     
-    const locationInfo = [
+    const locationInfo: Array<[string, string]> = [
       ['Current Location Status:', housemaid.locationStatus.isInsideCountry ? '✅ Inside Country' : '❌ Outside Country'],
       ['Exit Date:', formatDate(housemaid.locationStatus.exitDate)],
       ['Date Outside Country:', formatDate(housemaid.locationStatus.outsideCountryDate)]
@@ -268,7 +267,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     yPosition = checkPageBreak(pdf, yPosition, 50, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = addSectionHeader(pdf, '🏢 EMPLOYER DETAILS', yPosition);
     
-    const employerInfo = [
+    const employerInfo: Array<[string, string]> = [
       ['Company/Employer Name:', housemaid.employer.name],
       ['Contact Number:', housemaid.employer.mobileNumber]
     ];
@@ -279,7 +278,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     yPosition = checkPageBreak(pdf, yPosition, 80, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = addSectionHeader(pdf, '💼 EMPLOYMENT INFORMATION', yPosition);
     
-    const employmentInfo = [
+    const employmentInfo: Array<[string, string]> = [
       ['Job Position:', housemaid.employment.position || 'Housemaid'],
       ['Employment Status:', housemaid.employment.status.charAt(0).toUpperCase() + housemaid.employment.status.slice(1)],
       ['Contract Duration:', `${housemaid.employment.contractPeriodYears} year(s)`],
@@ -297,7 +296,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     // FLIGHT INFORMATION Section
     yPosition = addSectionHeader(pdf, '✈️ FLIGHT INFORMATION', yPosition);
     
-    const flightInfo = [
+    const flightInfo: Array<[string, string]> = [
       ['Flight Date:', formatDate(housemaid.flightInfo?.flightDate)],
       ['Flight Number:', housemaid.flightInfo?.flightNumber || 'Not specified'],
       ['Airline Name:', housemaid.flightInfo?.airlineName || 'Not specified'],
@@ -312,7 +311,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     yPosition = checkPageBreak(pdf, yPosition, 80, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = addSectionHeader(pdf, '🇵🇭 PHILIPPINE RECRUITMENT AGENCY', yPosition);
     
-    const phAgencyInfo = [
+    const phAgencyInfo: Array<[string, string]> = [
       ['Agency Name:', housemaid.recruitmentAgency.name],
       ['License Number:', housemaid.recruitmentAgency.licenseNumber || 'Not provided'],
       ['Contact Person:', housemaid.recruitmentAgency.contactPerson || 'Not provided'],
@@ -327,7 +326,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     yPosition = checkPageBreak(pdf, yPosition, 80, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = addSectionHeader(pdf, '🇸🇦 SAUDI RECRUITMENT AGENCY', yPosition);
     
-    const saAgencyInfo = [
+    const saAgencyInfo: Array<[string, string]> = [
       ['Agency Name:', housemaid.saudiRecruitmentAgency?.name || 'Not assigned'],
       ['License Number:', housemaid.saudiRecruitmentAgency?.licenseNumber || 'Not provided'],
       ['Contact Person:', housemaid.saudiRecruitmentAgency?.contactPerson || 'Not provided'],
@@ -342,7 +341,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
     yPosition = checkPageBreak(pdf, yPosition, 80, housemaid.personalInfo.name, pageNumber, totalPages, housemaid);
     yPosition = addSectionHeader(pdf, '⚠️ COMPLAINT INFORMATION', yPosition);
     
-    const complaintInfo = [
+    const complaintInfo: Array<[string, string]> = [
       ['Complaint Status:', housemaid.complaint.status.charAt(0).toUpperCase() + housemaid.complaint.status.slice(1)],
       ['Date Reported:', formatDate(housemaid.complaint.dateReported)],
       ['Date Resolved:', formatDate(housemaid.complaint.dateResolved)],
