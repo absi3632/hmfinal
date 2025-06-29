@@ -49,7 +49,6 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ housemaids, onClose }
 
   const addPageHeader = (pdf: jsPDF, pageNumber: number, totalPages: number, housemaidName: string, housemaid?: Housemaid) => {
     const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 25.4; // 1 inch margin in mm
     
     // Add brand logo in upper left corner (if available)
