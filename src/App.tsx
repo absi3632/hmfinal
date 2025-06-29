@@ -3,7 +3,7 @@ import { Housemaid } from './types/housemaid';
 import { AuthState, LoginCredentials } from './types/user';
 import { BrandSettings as BrandSettingsType } from './types/brand';
 import { saveHousemaids, loadHousemaids } from './utils/localStorage';
-import { initializeUsers, authenticateUser, authenticateGoogleUser, getCurrentUser, logout, hasPermission } from './utils/auth';
+import { initializeUsers, authenticateUser, getCurrentUser, logout, hasPermission } from './utils/auth';
 import { saveBrandSettings, loadBrandSettings } from './utils/brandSettings';
 import HousemaidList from './components/HousemaidList';
 import HousemaidForm from './components/HousemaidForm';
@@ -82,33 +82,6 @@ function App() {
     setLoginLoading(false);
   };
 
-  const handleGoogleLogin = async (email: string, googleUserData: any) => {
-    setLoginLoading(true);
-    setLoginError('');
-
-    // Simulate network delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const user = authenticateGoogleUser(email, googleUserData);
-    
-    if (user) {
-      setAuthState({
-        isAuthenticated: true,
-        user,
-        loading: false
-      });
-      
-      // Load housemaids data after successful login
-      const loadedHousemaids = loadHousemaids();
-      setHousemaids(loadedHousemaids);
-      setCurrentView('dashboard');
-    } else {
-      setLoginError('Authentication failed. Please contact your administrator.');
-    }
-    
-    setLoginLoading(false);
-  };
-
   const handleLogout = () => {
     logout();
     setAuthState({
@@ -181,7 +154,6 @@ function App() {
     return (
       <LoginPage 
         onLogin={handleLogin}
-        onGoogleLogin={handleGoogleLogin}
         error={loginError}
         loading={loginLoading}
         brandSettings={brandSettings}

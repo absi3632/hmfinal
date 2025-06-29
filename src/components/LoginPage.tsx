@@ -1,14 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, Shield, AlertCircle, CheckCircle } from 'lucide-react';
 import { LoginCredentials } from '../types/user';
 import { BrandSettings } from '../types/brand';
-import { initializeGoogleAuth, renderGoogleSignInButton, parseGoogleCredential, GoogleAuthResponse } from '../utils/googleAuth';
-import { isEmailInDatabase } from '../utils/auth';
 import BrandLogo from './BrandLogo';
 
 interface LoginPageProps {
   onLogin: (credentials: LoginCredentials) => void;
-  onGoogleLogin: (email: string, googleUserData: any) => void;
   error?: string;
   loading?: boolean;
   brandSettings: BrandSettings;
@@ -16,7 +13,6 @@ interface LoginPageProps {
 
 const LoginPage: React.FC<LoginPageProps> = ({ 
   onLogin, 
-  onGoogleLogin, 
   error, 
   loading, 
   brandSettings 
@@ -27,95 +23,14 @@ const LoginPage: React.FC<LoginPageProps> = ({
   });
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [googleError, setGoogleError] = useState<string>('');
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleInitialized, setGoogleInitialized] = useState(false);
-  const googleButtonRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Initialize Google Auth when component mounts
-    const initGoogle = async () => {
-      try {
-        // Wait for Google API to load
-        let attempts = 0;
-        const maxAttempts = 50; // 5 seconds max wait
-        
-        while (attempts < maxAttempts && (typeof window === 'undefined' || !window.google)) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          attempts++;
-        }
-
-        if (window.google) {
-          await initializeGoogleAuth();
-          setGoogleInitialized(true);
-          
-          // Render Google Sign-In button
-          if (googleButtonRef.current) {
-            renderGoogleSignInButton('google-signin-button', handleGoogleSignIn);
-          }
-        } else {
-          console.warn('Google API failed to load');
-        }
-      } catch (error) {
-        console.error('Failed to initialize Google Auth:', error);
-      }
-    };
-
-    initGoogle();
-  }, []);
-
-  useEffect(() => {
-    // Re-render Google button when it's initialized and ref is available
-    if (googleInitialized && googleButtonRef.current) {
-      renderGoogleSignInButton('google-signin-button', handleGoogleSignIn);
-    }
-  }, [googleInitialized]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setGoogleError('');
     onLogin(credentials);
   };
 
   const handleInputChange = (field: keyof LoginCredentials, value: string) => {
     setCredentials(prev => ({ ...prev, [field]: value }));
-    setGoogleError('');
-  };
-
-  const handleGoogleSignIn = async (response: GoogleAuthResponse) => {
-    setGoogleLoading(true);
-    setGoogleError('');
-
-    try {
-      const googleUser = parseGoogleCredential(response.credential);
-      
-      if (!googleUser) {
-        setGoogleError('Failed to parse Google authentication data.');
-        setGoogleLoading(false);
-        return;
-      }
-
-      // Check if email exists in database
-      if (!isEmailInDatabase(googleUser.email)) {
-        setGoogleError(`Access denied. The email "${googleUser.email}" is not authorized to access this system. Please contact your administrator.`);
-        setGoogleLoading(false);
-        return;
-      }
-
-      // Email exists, proceed with login
-      onGoogleLogin(googleUser.email, {
-        name: googleUser.name,
-        picture: googleUser.picture,
-        given_name: googleUser.given_name,
-        family_name: googleUser.family_name,
-      });
-
-    } catch (error) {
-      console.error('Google sign-in error:', error);
-      setGoogleError('An error occurred during Google sign-in. Please try again.');
-    } finally {
-      setGoogleLoading(false);
-    }
   };
 
   return (
@@ -159,55 +74,12 @@ const LoginPage: React.FC<LoginPageProps> = ({
             </div>
 
             {/* Error Messages */}
-            {(error || googleError) && (
+            {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-3">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-                <p className="text-red-700 text-sm">{error || googleError}</p>
+                <p className="text-red-700 text-sm">{error}</p>
               </div>
             )}
-
-            {/* Google Sign-In Button */}
-            <div className="mb-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Sign in with</span>
-                </div>
-              </div>
-              
-              <div className="mt-4">
-                {googleInitialized ? (
-                  <div className="relative">
-                    <div 
-                      id="google-signin-button" 
-                      ref={googleButtonRef}
-                      className={`w-full ${googleLoading ? 'opacity-50 pointer-events-none' : ''}`}
-                    />
-                    {googleLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-lg">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400 mr-3"></div>
-                    <span className="text-gray-600 text-sm">Loading Google Sign-In...</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or continue with email</span>
-                </div>
-              </div>
-            </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Email Field */}
@@ -229,7 +101,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
                     } as React.CSSProperties}
                     placeholder="Enter your email"
                     required
-                    disabled={loading || googleLoading}
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -253,13 +125,13 @@ const LoginPage: React.FC<LoginPageProps> = ({
                     } as React.CSSProperties}
                     placeholder="Enter your password"
                     required
-                    disabled={loading || googleLoading}
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    disabled={loading || googleLoading}
+                    disabled={loading}
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
@@ -282,7 +154,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
                     style={{
                       color: brandSettings.primaryColor || '#2563eb'
                     }}
-                    disabled={loading || googleLoading}
+                    disabled={loading}
                   />
                   <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                     Remember me
@@ -294,7 +166,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
                   style={{
                     color: brandSettings.primaryColor || '#2563eb'
                   }}
-                  disabled={loading || googleLoading}
+                  disabled={loading}
                 >
                   Forgot password?
                 </button>
@@ -303,7 +175,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading || googleLoading || !credentials.email || !credentials.password}
+                disabled={loading || !credentials.email || !credentials.password}
                 className="w-full text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 style={{
                   background: `linear-gradient(to right, ${brandSettings.primaryColor || '#2563eb'}, ${brandSettings.secondaryColor || '#7c3aed'})`,
@@ -334,7 +206,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
                 </div>
                 <div className="flex items-center space-x-2 text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span>Google Authentication</span>
+                  <span>Secure Authentication</span>
                 </div>
                 <div className="flex items-center space-x-2 text-gray-600">
                   <CheckCircle className="h-4 w-4 text-green-500" />
@@ -353,7 +225,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
                 <Shield className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="text-xs text-blue-700">
                   <p className="font-medium mb-1">Secure Access</p>
-                  <p>Only authorized email addresses can access this system. Contact your administrator if you need access.</p>
+                  <p>Only authorized users can access this system. Contact your administrator if you need access.</p>
                 </div>
               </div>
             </div>
