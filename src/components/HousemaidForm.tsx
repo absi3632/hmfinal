@@ -145,7 +145,7 @@ const HousemaidForm: React.FC<HousemaidFormProps> = ({ housemaid, onSave, onCanc
     setFormData(prev => ({
       ...prev,
       [section]: {
-        ...prev[section as keyof typeof prev],
+        ...(prev[section as keyof typeof prev] || {}),
         [field]: value
       }
     }));
